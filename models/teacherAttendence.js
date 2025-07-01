@@ -26,6 +26,7 @@ const teacherAttendanceSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
+
   {
     timestamps: true,
   }
