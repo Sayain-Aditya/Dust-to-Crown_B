@@ -10,6 +10,9 @@ exports.checkRFID = async (req, res) => {
   }
 
   try {
+    // Get current time in Indian Standard Time (IST) using toLocaleString with timeZone
+    const checkTime = new Date();
+    const istTimeString = checkTime.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
     const user = await User.findOne({ rfid });
 
     if (user) {
@@ -19,7 +22,8 @@ exports.checkRFID = async (req, res) => {
           name: user.name,
           email: user.email,
           rfid: user.rfid,
-          role: user.role
+          role: user.role,
+          checkTime: istTimeString
         }
       });
     } else {
