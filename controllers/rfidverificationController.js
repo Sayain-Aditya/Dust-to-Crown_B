@@ -3,45 +3,7 @@ const Rfid = require("../models/Rfid");
 const User = require("../models/userModel"); 
 const teacherAttendence = require("../models/teacherAttendence"); 
 
-exports.scanRFIDandMarkAttendance = async (req, res) => {
-  try {
-    const { rfid } = req.body;
-
-    if (!rfid) return res.status(400).json({ error: "RFID is required" });
-
-    const teacher = await User.findOne({ rfid, role: "Teacher" });
-    if (!teacher) {
-      return res.status(404).json({ message: "RFID not found or not a teacher" });
-    }
-    const today = new Date();
-    const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-    const endOfDay = new Date(today.setHours(23, 59, 59, 999));
-    let attendance = await teacherAttendence.findOne({
-      teacher: teacher._id,
-      date: { $gte: startOfDay, $lte: endOfDay },
-    });
-    if (attendance) {
-      return res.status(200).json({
-        message: `Welcome back, ${teacher.name}! You are already marked Present.`,
-        data: attendance,
-      });
-    }
-    attendance = new teacherAttendence({
-      teacher: teacher._id,
-      name: teacher.name,
-      email: teacher.email,
-      status: "Present",
-      date: new Date(),
-    });
-    const saved = await attendance.save();
-    res.status(201).json({
-      message: `Welcome, ${teacher.name}! You have been marked Present.`,
-      data: saved,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+// scanRFIDandMarkAttendance removed: logic now handled in checkRFID
 exports.checkRFID = async (req, res) => {
   const { rfid } = req.body;
   if (!rfid) {
@@ -60,12 +22,8 @@ exports.checkRFID = async (req, res) => {
     // If user is a teacher, mark attendance
     let attendanceData = null;
     if (user.role === "Teacher") {
-      const today = new Date();
-      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
       let attendance = await teacherAttendence.findOne({
         teacher: user._id,
-        date: { $gte: startOfDay, $lte: endOfDay },
       });
       if (!attendance) {
         attendance = new teacherAttendence({
@@ -73,7 +31,6 @@ exports.checkRFID = async (req, res) => {
           name: user.name,
           email: user.email,
           status: "Present",
-          date: new Date(),
         });
         await attendance.save();
       }
