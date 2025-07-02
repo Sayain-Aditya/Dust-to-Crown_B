@@ -1,9 +1,8 @@
 const express = require("express");
 const Rfid = require("../models/Rfid");
 const User = require("../models/userModel"); 
-const teacherAttendence = require("../models/teacherAttendence"); 
+const teacherAttendence = require("../models/teacherAttendence");
 
-// scanRFIDandMarkAttendance removed: logic now handled in checkRFID
 exports.checkRFID = async (req, res) => {
   const { rfid } = req.body;
   if (!rfid) {
@@ -22,18 +21,34 @@ exports.checkRFID = async (req, res) => {
     // If user is a teacher, mark attendance
     let attendanceData = null;
     if (user.role === "Teacher") {
+      const today = new Date();
+      const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+      const endOfDay = new Date(today.setHours(23, 59, 59, 999));
       let attendance = await teacherAttendence.findOne({
         teacher: user._id,
+        date: { $gte: startOfDay, $lte: endOfDay },
       });
-      if (!attendance) {
-        attendance = new teacherAttendence({
-          teacher: user._id,
-          name: user.name,
-          email: user.email,
-          status: "Present",
+      if (attendance) {
+        return res.status(200).json({
+          message: `Welcome back, ${user.name}! You are already marked Present for today.`,
+          user: {
+            name: user.name,
+            email: user.email,
+            rfid: user.rfid,
+            role: user.role,
+            checkTime: istTimeString,
+          },
+          attendance: attendance,
         });
-        await attendance.save();
       }
+      attendance = new teacherAttendence({
+        teacher: user._id,
+        name: user.name,
+        email: user.email,
+        status: "Present",
+        date: new Date(),
+      });
+      await attendance.save();
       attendanceData = attendance;
     }
     return res.status(200).json({
@@ -44,6 +59,7 @@ exports.checkRFID = async (req, res) => {
         rfid: user.rfid,
         role: user.role,
         checkTime: istTimeString,
+        
       },
       attendance: attendanceData,
     });
